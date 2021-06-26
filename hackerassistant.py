@@ -1,16 +1,20 @@
-#!/usr/bin/python3.7
 #-*-encoding: utf8 -*-
 
+from configuration import __API_TOKEN__, __LOG_PATH__, __WORKSPACE_DIR__, _USE_PROXY_, _PROXY_FILE_
 import subprocess
 import telegram
 from telegram.ext import *
 from time import time, strftime, localtime
 import string, random
 import logging
+import requests
+import random
+
+
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
-__API_TOKEN__ = "1457372735:AAHG3xrwc18NvGPpLZUJJeW-SR5bt9J9GYg"
-__LOG_PATH__ = "/home/h4niz/Downloads/"
-__WORKSPACE_DIR__ = "/home/h4niz/Bond"
+
+
+
 def test(cmd):
 	result = subprocess.run(cmd, stdout=subprocess.PIPE)
 	return result.stdout.decode()
@@ -65,6 +69,29 @@ def haniz(update, context):
 	except Exception as ex:
 		context.bot.send_message(chat_id=update.effective_chat.id, text=ex)
 
+
+def test_proxy(proxy):
+	url = "http://ifconfig.me"
+	try:
+		res = requests.get(url, proxies={"http": "socks5://{}".format(proxy)})
+		# print(res.text)
+		return res.text in proxy
+	except Exception as e:
+		raise e
+		return False
+
+def proxy_chain():
+	if(_USE_PROXY_):
+		with open(_PROXY_FILE_) as f:
+			proxies = f.read().strip().split("\n")
+		p = proxies[random.randint(0, len(proxies)-1)]
+		print("[+] OK! {}".format(p))
+		if(test_proxy(p) == False):
+			return []
+		return p
+	else:
+		return []
+
 def custom_command(update, context):
 	try:
 		context.bot.send_message(chat_id=update.effective_chat.id, text="Running {}".format(' '.join(context.args)))
@@ -78,7 +105,8 @@ def custom_command(update, context):
 # Sn1per recon
 def recon(update, context):
 	try:
-		cmd = ['sniper', '-t', context.args[0], '-o', '-re']
+		p = proxy_chain()
+		cmd = ['export', 'https_proxy=socks5://{}'.format(p), 'http_proxy=socks5://{}'.format(p), 'sniper', '-t', context.args[0], '-o', '-re']
 		context.bot.send_message(chat_id=update.effective_chat.id, text="Running {}".format(' '.join(cmd)))
 		result = subprocess.run(cmd, stdout=subprocess.PIPE)
 		print(result.stdout)
